@@ -25,6 +25,6 @@ class _PixabayPageState extends State<PixabayPage> {
   @override
   Widget build(BuildContext context) {
 
-    return Scaffold();
+    return const Scaffold();
   }
 }
