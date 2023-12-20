@@ -1,3 +1,4 @@
+// Flutter imports:
 import 'package:flutter/material.dart';
 
 void main() {
@@ -24,7 +25,6 @@ class PixabayPage extends StatefulWidget {
 class _PixabayPageState extends State<PixabayPage> {
   @override
   Widget build(BuildContext context) {
-
     return const Scaffold();
   }
 }
