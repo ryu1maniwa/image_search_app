@@ -10,19 +10,19 @@ void main(List<String> arguments) {
 
 Future<bool> preCommit() async {
   // Linterの実行
-  // print("Running Dart Fix...");
-  // var result = await Process.run('dart', ['fix', '--apply', 'lib']);
-  // if (result.exitCode != 0) {
-  //   print(result.stdout);
-  //   return false;
-  // }
+  print("Running Dart Fix...");
+  var result = await Process.run('dart', ['fix', '--apply', 'lib']);
+  if (result.exitCode != 0) {
+    print(result.stdout);
+    return false;
+  }
 
   // Importのソート
   print("Sorting Dart Imports...");
-  var result =
+  var importResult =
       await Process.run('flutter', ['pub', 'run', 'import_sorter:main']);
-  if (result.exitCode != 0) {
-    print(result.stdout);
+  if (importResult.exitCode != 0) {
+    print(importResult.stdout);
     return false;
   }
 
