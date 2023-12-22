@@ -31,14 +31,40 @@ class PixabayPage extends StatefulWidget {
 }
 
 class _PixabayPageState extends State<PixabayPage> {
-  List imageList = [];
+  List<PixabayImage> pixabayImages = [];
 
   Future<void> fetchImages(String text) async {
-    Response response = await Dio().get(
-      'https://pixabay.com/api/?key=41361735-3ab314baf45aba7cf424fcd1f&q=$text&image_type=photo&pretty=true&per_page=100',
+    final response = await Dio().get(
+      'https://pixabay.com/api',
+      queryParameters: {
+        'key': '41361735-3ab314baf45aba7cf424fcd1f',
+        'q': text,
+        'image_type': 'photo',
+        'pretty': 'true',
+        'per_page': '100',
+      },
     );
-    imageList = response.data['hits'];
+    final List hits = response.data['hits'];
+    pixabayImages = hits.map((e) => PixabayImage.fromMap(e)).toList();
     setState(() {});
+  }
+
+  Future<void> shareImage(String url) async {
+    final dir = await getTemporaryDirectory();
+
+    final response = await Dio().get(
+      url,
+      options: Options(
+        // 画像をダウンロードするときは ResponseType.bytes を指定します。
+        responseType: ResponseType.bytes,
+      ),
+    );
+
+    // フォルダの中に image.png という名前でファイルを作り、そこに画像データを書き込みます。
+    final imageFile =
+        await File('${dir.path}/image.png').writeAsBytes(response.data);
+
+    await Share.shareXFiles([XFile(imageFile.path)]);
   }
 
   @override
@@ -65,34 +91,17 @@ class _PixabayPageState extends State<PixabayPage> {
       body: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3),
-          itemCount: imageList.length,
+          itemCount: pixabayImages.length,
           itemBuilder: (context, index) {
-            Map<String, dynamic> image = imageList[index];
+            final pixabayImage = pixabayImages[index];
             return InkWell(
               onTap: () async {
-                // まずは一時保存に使えるフォルダ情報を取得します。
-                // Future 型なので await で待ちます
-                Directory dir = await getTemporaryDirectory();
-
-                Response response = await Dio().get(
-                  // previewURL は荒いためより高解像度の webformatURL から画像をダウンロードします。
-                  image['webformatURL'],
-                  options: Options(
-                    // 画像をダウンロードするときは ResponseType.bytes を指定します。
-                    responseType: ResponseType.bytes,
-                  ),
-                );
-
-                // フォルダの中に image.png という名前でファイルを作り、そこに画像データを書き込みます。
-                File imageFile = await File('${dir.path}/image.png')
-                    .writeAsBytes(response.data);
-                // path を指定すると share できます。
-                await Share.shareXFiles([XFile(imageFile.path)]);
+                shareImage(pixabayImage.webformatURL);
               },
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(image['previewURL'], fit: BoxFit.cover),
+                  Image.network(pixabayImage.previewURL, fit: BoxFit.cover),
                   Align(
                     alignment: Alignment.bottomRight,
                     child: Container(
@@ -101,7 +110,7 @@ class _PixabayPageState extends State<PixabayPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.thumb_up_alt_outlined, size: 14),
-                            Text(image['likes'].toString()),
+                            Text(pixabayImage.likes.toString()),
                           ],
                         )),
                   ),
@@ -109,6 +118,26 @@ class _PixabayPageState extends State<PixabayPage> {
               ),
             );
           }),
+    );
+  }
+}
+
+class PixabayImage {
+  final String previewURL;
+  final int likes;
+  final String webformatURL;
+
+  PixabayImage({
+    required this.previewURL,
+    required this.likes,
+    required this.webformatURL,
+  });
+
+  factory PixabayImage.fromMap(Map<String, dynamic> map) {
+    return PixabayImage(
+      previewURL: map['previewURL'],
+      likes: map['likes'],
+      webformatURL: map['webformatURL'],
     );
   }
 }
